@@ -5,7 +5,6 @@
     "charliermarsh.ruff",
     "ms-python.mypy-type-checker",
     "tamasfe.even-better-toml",
-    "eamodio.gitlens",
     "redhat.vscode-yaml"
   ]
 }
