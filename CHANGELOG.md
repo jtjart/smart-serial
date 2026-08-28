@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.0] - 2026-08-28
 
 ### Added
 
@@ -26,14 +26,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Development tooling: `ruff` (lint + format), `mypy` (strict), `pytest`
   with coverage, `pre-commit`, GitHub Actions CI, and a trusted-publishing
   release workflow.
-
-### Known limitations
-
-- The UX60 driver is implemented directly from the vendor's documented
-  command reference but hasn't yet been verified against physical
-  hardware -- see the README's "Verifying against real hardware"
-  section.
-
-## [0.1.0] - Unreleased
-
-Initial scaffold -- not yet published to PyPI.
