@@ -5,7 +5,7 @@ Asyncio Python library for controlling SMART Technologies AV hardware
 connection. The driver layer is pluggable, so support for other models
 or vendors can be added without touching this package's internals.
 
-[![CI](https://github.com/YOUR-GITHUB-USERNAME/smart-serial/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR-GITHUB-USERNAME/smart-serial/actions/workflows/ci.yml)
+[![CI](https://github.com/jtjart/smart-serial/actions/workflows/ci.yml/badge.svg)](https://github.com/jtjart/smart-serial/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/smart-serial.svg)](https://pypi.org/project/smart-serial/)
 [![Python versions](https://img.shields.io/pypi/pyversions/smart-serial.svg)](https://pypi.org/project/smart-serial/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -200,7 +200,7 @@ and `create_device()` pick it up automatically.
 ## Development
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-USERNAME/smart-serial.git
+git clone https://github.com/jtjart/smart-serial.git
 cd smart-serial
 python -m venv .venv
 source .venv/bin/activate  # .venv\Scripts\activate on Windows
