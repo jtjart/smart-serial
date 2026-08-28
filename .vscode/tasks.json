@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Lint (ruff)",
+      "type": "shell",
+      "command": "ruff check . && ruff format --check .",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Type-check (mypy)",
+      "type": "shell",
+      "command": "mypy src",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Test (pytest)",
+      "type": "shell",
+      "command": "pytest --cov=smart_serial --cov-report=term-missing",
+      "problemMatcher": [],
+      "group": { "kind": "test", "isDefault": true }
+    },
+    {
+      "label": "Build package",
+      "type": "shell",
+      "command": "python -m build",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Run all checks (lint + types + tests)",
+      "dependsOn": ["Lint (ruff)", "Type-check (mypy)", "Test (pytest)"],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    }
+  ]
+}

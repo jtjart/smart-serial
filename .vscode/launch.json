@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Debug Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: Debug Tests (pytest)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-v", "${file}"],
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "smart-serial CLI: list-devices",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "smart_serial.cli",
+      "args": ["list-devices"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "smart-serial CLI: power-state (edit --port first)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "smart_serial.cli",
+      "args": ["--port", "/dev/ttyUSB0", "power-state"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}
