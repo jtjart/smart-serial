@@ -28,8 +28,16 @@ Protocol summary (see Appendix B for full detail)
 
 from __future__ import annotations
 
+from typing import Literal, cast
+
 from ...device import Device
 from ...registry import register
+
+InputSource = Literal["VGA1", "VGA2", "Composite", "HDMI"]
+DisplayMode = Literal["SMARTpresentation", "brightroom", "darkroom", "sRGB", "User"]
+ClosedCaptioning = Literal["cc1", "cc2", "off"]
+PowerState = Literal["Powering", "On", "Cooling", "Confirm off", "Idle"]
+NetworkStatus = Literal["connected", "disconnected", "disabled"]
 
 
 def _onoff(value: bool) -> str:
@@ -105,25 +113,25 @@ class SmartUX60(Device):
     async def power_off_low_power(self) -> str:
         return self._extract_value(await self.transport.send_command("off low power"))
 
-    async def get_power_state(self) -> str:
+    async def get_power_state(self) -> PowerState:
         """Return the raw power state: Powering, On, Cooling, Confirm off, or Idle."""
-        return await self.get_value("powerstate")
+        return cast(PowerState, await self.get_value("powerstate"))
 
     # --- Source selection -----------------------------------------------
 
-    async def get_input(self) -> str:
-        return await self.get_value("input")
+    async def get_input(self) -> InputSource:
+        return cast(InputSource, await self.get_value("input"))
 
-    async def select_input(self, source: str) -> str:
+    async def select_input(self, source: InputSource) -> str:
         """Switch the active input: ``"VGA1"``, ``"VGA2"``, ``"Composite"``, or ``"HDMI"``."""
         return await self.set_value("input", source)
 
     # --- General source (display) controls -------------------------------
 
-    async def get_display_mode(self) -> str:
-        return await self.get_value("displaymode")
+    async def get_display_mode(self) -> DisplayMode:
+        return cast(DisplayMode, await self.get_value("displaymode"))
 
-    async def set_display_mode(self, mode: str) -> str:
+    async def set_display_mode(self, mode: DisplayMode) -> str:
         """One of ``"SMARTpresentation"``, ``"brightroom"``, ``"darkroom"``,
         ``"sRGB"``, or ``"User"``.
         """
@@ -152,10 +160,10 @@ class SmartUX60(Device):
     async def set_video_freeze(self, enabled: bool) -> bool:
         return _bool(await self.set_value("videofreeze", _onoff(enabled)))
 
-    async def get_closed_captioning(self) -> str:
-        return await self.get_value("cc")
+    async def get_closed_captioning(self) -> ClosedCaptioning:
+        return cast(ClosedCaptioning, await self.get_value("cc"))
 
-    async def set_closed_captioning(self, target: str) -> str:
+    async def set_closed_captioning(self, target: ClosedCaptioning) -> str:
         """One of ``"cc1"``, ``"cc2"``, or ``"off"``."""
         return await self.set_value("cc", target)
 
@@ -182,9 +190,9 @@ class SmartUX60(Device):
 
     # --- Network controls ---------------------------------------------------
 
-    async def get_network_status(self) -> str:
+    async def get_network_status(self) -> NetworkStatus:
         """``"connected"``, ``"disconnected"``, or ``"disabled"``."""
-        return await self.get_value("netstatus")
+        return cast(NetworkStatus, await self.get_value("netstatus"))
 
     async def get_ip_address(self) -> str:
         return await self.get_value("ipaddr")
