@@ -20,6 +20,7 @@ from .device import Device
 from .exceptions import (
     CommandError,
     ConnectionNotEstablishedError,
+    DeviceIdleError,
     SerialTimeoutError,
     SmartSerialError,
     UnsupportedDeviceError,
@@ -31,6 +32,7 @@ __all__ = [
     "CommandError",
     "ConnectionNotEstablishedError",
     "Device",
+    "DeviceIdleError",
     "SerialTimeoutError",
     "SerialTransport",
     "SmartSerialError",

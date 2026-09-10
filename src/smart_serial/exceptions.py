@@ -33,6 +33,16 @@ class CommandError(SmartSerialError):
         self.response = response
 
 
+class DeviceIdleError(CommandError):
+    """Raised when the device accepts the command but rejects it because it is idle/off."""
+
+    def __init__(self, command: str, response: str) -> None:
+        super().__init__(command, response)
+        self.message = (
+            f"Command {command!r} is not available while the device is idle/off: {response!r}"
+        )
+
+
 class UnsupportedDeviceError(SmartSerialError):
     """Raised when no driver is registered for a requested vendor/model pair."""
 

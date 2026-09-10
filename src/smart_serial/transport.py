@@ -17,7 +17,12 @@ import re
 
 import serial_asyncio_fast as serial_asyncio
 
-from .exceptions import CommandError, ConnectionNotEstablishedError, SerialTimeoutError
+from .exceptions import (
+    CommandError,
+    ConnectionNotEstablishedError,
+    DeviceIdleError,
+    SerialTimeoutError,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -116,41 +121,56 @@ class SerialTransport:
     async def send_command(self, command: str) -> str:
         """Send ``command`` and return the device's reply line.
 
-        Waits for, and consumes, the trailing ``>`` prompt the device
-        sends after every response so the transport stays in sync for the
-        next call. Raises :class:`CommandError` if the device reports the
-        command as invalid (an ``invalidcmd=...`` reply),
-        :class:`ConnectionNotEstablishedError` if not connected, or
-        :class:`SerialTimeoutError` if the device doesn't reply -- and
-        show a prompt -- within ``response_timeout`` seconds.
+        Retry a few times on garbled wake-up responses. If the projector
+        reports the same invalid command back, it is treated as an idle-state
+        error; otherwise the command is retried until it succeeds or fails.
         """
         if not self.is_connected or self._reader is None or self._writer is None:
             raise ConnectionNotEstablishedError(self.port)
 
-        async with self._lock:
-            payload = command.encode(self.encoding) + self.line_ending
-            _LOGGER.debug("-> %r", payload)
-            # The hardware documentation calls for a short delay between
-            # characters for reliable operation, so bytes are written
-            # (and paced) one at a time rather than in a single burst.
-            for i, byte in enumerate(payload):
-                self._writer.write(bytes((byte,)))
-                if i < len(payload) - 1:
-                    await asyncio.sleep(self.inter_character_delay)
-            await self._writer.drain()
+        max_retries = 3
+        for attempt in range(max_retries):
+            async with self._lock:
+                payload = command.encode(self.encoding) + self.line_ending
+                _LOGGER.debug("-> %r", payload)
+                for i, byte in enumerate(payload):
+                    self._writer.write(bytes((byte,)))
+                    if i < len(payload) - 1:
+                        await asyncio.sleep(self.inter_character_delay)
+                await self._writer.drain()
 
-            try:
-                raw = await asyncio.wait_for(
-                    self._reader.readuntil(self.prompt), timeout=self.response_timeout
-                )
-            except (asyncio.TimeoutError, asyncio.IncompleteReadError) as exc:
-                raise SerialTimeoutError(self.port, command) from exc
+                try:
+                    raw = await asyncio.wait_for(
+                        self._reader.readuntil(self.prompt), timeout=self.response_timeout
+                    )
+                except (asyncio.TimeoutError, asyncio.IncompleteReadError) as exc:
+                    if attempt < max_retries - 1:
+                        continue
+                    raise SerialTimeoutError(self.port, command) from exc
 
-            body = raw[: -len(self.prompt)]
-            lines = [line for line in _LINE_SPLIT_RE.split(body) if line.strip()]
-            response = lines[-1].decode(self.encoding, errors="replace").strip() if lines else ""
-            _LOGGER.debug("<- %r", response)
+                body = raw[: -len(self.prompt)]
+                lines = [line for line in _LINE_SPLIT_RE.split(body) if line.strip()]
+                decoded = [line.decode(self.encoding, errors="replace").strip() for line in lines]
 
-            if response.lower().startswith("invalidcmd="):
-                raise CommandError(command, response)
-            return response
+                response = decoded[-1] if decoded else ""
+                if any("=" in line for line in decoded):
+                    response = next(
+                        (line for line in reversed(decoded) if "=" in line),
+                        response,
+                    )
+
+                _LOGGER.debug("<- %r", response)
+
+                normalized = response.lower()
+                if normalized.startswith("invalid cmd="):
+                    invalid_value = response.split("=", 1)[1].strip() if "=" in response else ""
+                    invalid_cmd = invalid_value.lower().strip()
+                    sent_cmd = command.lower().strip()
+                    if invalid_cmd == sent_cmd:
+                        raise DeviceIdleError(command, response)
+                    if attempt < max_retries - 1:
+                        continue
+                    raise CommandError(command, response)
+                return response
+
+        raise CommandError(command, "retry limit exhausted")
