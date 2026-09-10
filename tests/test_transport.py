@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 
+import pytest
+
 from smart_serial.exceptions import DeviceIdleError
 from smart_serial.transport import SerialTransport
 
@@ -69,6 +71,43 @@ async def test_send_command_raises_device_idle_error_for_matching_invalid_cmd() 
         return
 
     raise AssertionError("DeviceIdleError was not raised")
+
+
+async def test_send_command_consumes_pending_prompt_before_writing() -> None:
+    class _Reader:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def readuntil(self, _prompt: bytes) -> bytes:
+            self.calls += 1
+            if self.calls == 1:
+                return b">"
+            return b"powerstate=On\r>"
+
+    transport = SerialTransport("loop://")
+    transport._reader = _Reader()
+    transport._writer = _DummyWriter()
+    transport._lock = asyncio.Lock()
+
+    assert await transport.send_command("get powerstate") == "powerstate=On"
+
+
+async def test_send_command_paces_writes_at_10ms_intervals(monkeypatch: pytest.MonkeyPatch) -> None:
+    sleep_calls: list[float] = []
+
+    async def fake_sleep(delay: float) -> None:
+        sleep_calls.append(delay)
+
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+    transport = SerialTransport("loop://", inter_character_delay=0.01)
+    transport._reader = _DummyReader()
+    transport._writer = _DummyWriter()
+    transport._lock = asyncio.Lock()
+
+    assert await transport.send_command("get volume") == "volume=12"
+    assert len(sleep_calls) == 10
+    assert sleep_calls == [0.01] * 10
 
 
 async def test_send_command_retries_after_timeout() -> None:

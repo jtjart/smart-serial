@@ -5,8 +5,11 @@ Technologies AV hardware (confirmed against the SMART UX60 projector's
 "RS-232 Programming Commands" reference): commands are ASCII, terminated
 by a carriage return, and every response -- successful or not -- is
 followed by a ``>`` command prompt that signals the device is ready for
-the next command. A command must not be sent until that prompt has been
-consumed.
+the next command. A command must not be sent while that prompt is still
+pending; before each write, we consume any stale prompt already waiting in
+buffer so the next command is sent only after the device has signalled it
+is ready. The hardware guide also requires roughly 10 ms between
+characters for reliable operation, so writes are paced accordingly.
 """
 
 from __future__ import annotations
@@ -118,6 +121,24 @@ class SerialTransport:
     async def __aexit__(self, *exc_info: object) -> None:
         await self.disconnect()
 
+    async def _drain_ready_prompt(self) -> None:
+        """Consume a pending prompt before sending a new command.
+
+        Some serial adapters leave a stale ``>`` prompt in the receive buffer
+        after connect or after a previous failed call. This makes sure we
+        never send a command while the projector still thinks the previous
+        one is complete and waiting for the next command.
+        """
+        if self._reader is None:
+            return
+
+        try:
+            raw = await asyncio.wait_for(self._reader.readuntil(self.prompt), timeout=0.05)
+        except (asyncio.TimeoutError, asyncio.IncompleteReadError):
+            return
+
+        _LOGGER.debug("Discarded pending prompt before write: %r", raw)
+
     async def send_command(self, command: str) -> str:
         """Send ``command`` and return the device's reply line.
 
@@ -131,6 +152,8 @@ class SerialTransport:
         max_retries = 3
         for attempt in range(max_retries):
             async with self._lock:
+                await self._drain_ready_prompt()
+
                 payload = command.encode(self.encoding) + self.line_ending
                 _LOGGER.debug("-> %r", payload)
                 for i, byte in enumerate(payload):

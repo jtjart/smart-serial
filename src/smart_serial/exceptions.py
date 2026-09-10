@@ -41,15 +41,3 @@ class DeviceIdleError(CommandError):
         self.message = (
             f"Command {command!r} is not available while the device is idle/off: {response!r}"
         )
-
-
-class UnsupportedDeviceError(SmartSerialError):
-    """Raised when no driver is registered for a requested vendor/model pair."""
-
-    def __init__(self, vendor: str, model: str) -> None:
-        super().__init__(
-            f"No driver registered for device {vendor!r}:{model!r}. "
-            "Call smart_serial.available_devices() to see what's registered."
-        )
-        self.vendor = vendor
-        self.model = model

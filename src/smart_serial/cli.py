@@ -12,38 +12,31 @@ import argparse
 import asyncio
 import sys
 
-from .registry import available_devices, create_device
+from .devices.smart.ux60 import SmartUX60
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="smart-serial",
-        description="Send a single command to a serial-controlled AV device.",
+        description="Send a single command to a SMART UX60 projector.",
     )
     parser.add_argument("--port", help="Serial port, e.g. /dev/ttyUSB0 or COM3")
-    parser.add_argument("--vendor", default="smart", help="Device vendor key (default: smart)")
-    parser.add_argument("--model", default="ux60", help="Device model key (default: ux60)")
     parser.add_argument("--baudrate", type=int, default=None, help="Override the default baud rate")
     parser.add_argument(
         "action",
-        choices=["power-on", "power-off", "power-state", "list-devices"],
+        choices=["power-on", "power-off", "power-state"],
         help="Action to perform",
     )
     return parser
 
 
 async def _run(args: argparse.Namespace) -> int:
-    if args.action == "list-devices":
-        for key in available_devices():
-            print(key)
-        return 0
-
     if not args.port:
         print("error: --port is required for this action", file=sys.stderr)
         return 2
 
     kwargs: dict[str, object] = {} if args.baudrate is None else {"baudrate": args.baudrate}
-    device = create_device(args.vendor, args.model, args.port, **kwargs)
+    device = SmartUX60.create(args.port, **kwargs)
     async with device:
         if args.action == "power-on":
             await device.power_on()

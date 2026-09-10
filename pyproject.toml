@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "smart-serial"
 dynamic = ["version"]
-description = "Asyncio library for controlling SMART Technologies AV devices (e.g. SMART UX60 projector) over a serial (RS-232) connection, with an extensible driver registry for additional models."
+description = "Asyncio library for controlling SMART Technologies AV devices (e.g. SMART UX60 projector) over a serial (RS-232) connection."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -45,9 +45,6 @@ Changelog = "https://github.com/jtjart/smart-serial/blob/main/CHANGELOG.md"
 
 [project.scripts]
 smart-serial = "smart_serial.cli:main"
-
-[project.entry-points."smart_serial.devices"]
-"smart:ux60" = "smart_serial.devices.smart.ux60:SmartUX60"
 
 [tool.hatch.version]
 path = "src/smart_serial/__init__.py"

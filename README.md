@@ -2,8 +2,8 @@
 
 Asyncio Python library for controlling SMART Technologies AV hardware
 (starting with the **SMART UX60** projector) over a serial (RS-232)
-connection. The driver layer is pluggable, so support for other models
-or vendors can be added without touching this package's internals.
+connection. Devices are implemented as explicit subclasses of `Device`,
+so you import the model you want and use it directly.
 
 [![CI](https://github.com/jtjart/smart-serial/actions/workflows/ci.yml/badge.svg)](https://github.com/jtjart/smart-serial/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/smart-serial.svg)](https://pypi.org/project/smart-serial/)
@@ -17,6 +17,13 @@ settings, power state controls, source selection, display/audio/network
 settings, and system commands. It hasn't yet been exercised against real
 hardware; see [Verifying against real hardware](#verifying-against-real-hardware).
 
+The transport follows the projector's operating notes closely:
+
+- send a command only after the device has emitted the next `>` prompt
+- keep roughly 10 ms between characters when writing to the port
+- type commands exactly as documented and press Enter after each one
+- wait for the device's response before sending the next command
+
 ## Install
 
 ```bash
@@ -29,11 +36,12 @@ Requires Python 3.10+.
 
 ```python
 import asyncio
-from smart_serial import create_device
+
+from smart_serial.devices.smart.ux60 import SmartUX60
 
 
 async def main() -> None:
-    projector = create_device("smart", "ux60", "/dev/ttyUSB0")  # or "COM3" on Windows
+    projector = SmartUX60.create("/dev/ttyUSB0")  # or "COM3" on Windows
     async with projector:  # connects on enter, disconnects on exit
         await projector.power_on()
         await projector.select_input("HDMI")
@@ -43,8 +51,7 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-You can also import a driver class directly if you don't need the
-registry lookup:
+You can also instantiate the transport manually and pass it in:
 
 ```python
 from smart_serial import SerialTransport
@@ -53,6 +60,9 @@ from smart_serial.devices.smart.ux60 import SmartUX60
 transport = SerialTransport("/dev/ttyUSB0")  # defaults to the UX60's 19200 baud
 projector = SmartUX60(transport)
 ```
+
+The library intentionally does not expose a dynamic registry lookup; you
+choose the concrete device class explicitly.
 
 Every documented command is reachable, whether or not it has a
 dedicated method, via the generic accessors:
@@ -71,7 +81,6 @@ installs the `smart-serial` console script):
 
 ```bash
 smart-serial --port /dev/ttyUSB0 power-state
-smart-serial list-devices
 ```
 
 ## Architecture
@@ -80,26 +89,27 @@ smart-serial list-devices
 smart_serial/
 ├── transport.py   # SerialTransport: async, prompt-delimited read/write over the port
 ├── device.py      # Device: abstract base class every driver extends
-├── registry.py    # register() / create_device(): vendor:model -> Device class
-└── devices/
-    └── smart/
-        └── ux60.py  # SmartUX60(Device): the actual command implementations
+├── devices/
+│   └── smart/
+│       └── ux60.py  # SmartUX60(Device): the actual command implementations
+└── cli.py         # small CLI for manual testing against the built-in device
 ```
 
 - **`SerialTransport`** owns the physical connection (via
   [`pyserial-asyncio-fast`](https://pypi.org/project/pyserial-asyncio-fast/))
   and knows nothing about any specific device. It speaks the
-  command/prompt protocol common to this class of AV hardware: write a
-  line, read until the device's next `>` prompt, hand back the reply.
-  It paces writes with the ~10 ms inter-character delay the hardware
-  guide calls for, and serializes access with a lock so concurrent
-  callers don't interleave on the wire.
+  command/prompt protocol common to this class of AV hardware: only send
+  a command after the projector has issued the ready `>` prompt, write a
+  line, then read until the device's next `>` prompt and return the
+  reply. It paces writes with the ~10 ms inter-character delay the
+  hardware guide calls for, and serializes access with a lock so
+  concurrent callers don't interleave on the wire.
 - **`Device`** is the abstract contract (`power_on`, `power_off`,
   `get_power_state`, connect/disconnect, async context manager) every
   driver implements.
-- **`registry`** maps a `"vendor:model"` key to a `Device` subclass, so
-  callers can do `create_device("smart", "ux60", port)` without
-  importing the driver module directly.
+- **Built-in devices** are normal Python classes that live under
+  `smart_serial.devices`; callers import the concrete class they need
+  rather than relying on a runtime registry lookup.
 
 ## SMART UX60 driver reference
 
@@ -167,35 +177,19 @@ section (and removing the caveat) would be very welcome.
 
 ## Adding support for another model
 
-You don't need to fork this repository to add a device. Two options:
-
-**1. Contribute a driver directly to this package** (good for models
-closely related to what's already here):
+Add a new driver class directly in this repository:
 
 1. Create `src/smart_serial/devices/<vendor>/<model>.py` with a class
-   that extends `Device`, sets `vendor`/`model`, and is decorated with
-   `@register`. Use `devices/smart/ux60.py` as a template -- if the new
-   model shares SMART's `get`/`set` key=value convention, its
-   `get_value`/`set_value`/`adjust_value` implementation can likely be
-   copied directly.
-2. Import it from `src/smart_serial/devices/__init__.py`.
-3. Add a matching line under `[project.entry-points."smart_serial.devices"]`
-   in `pyproject.toml`.
+   that extends `Device` and sets `vendor`/`model`.
+2. Follow `devices/smart/ux60.py` as the template for command handling.
+3. Import it from `src/smart_serial/devices/__init__.py`.
 4. Add tests under `tests/`, following `test_ux60.py` and the
    `fake_transport` fixture in `tests/conftest.py` (no real hardware
    needed).
 
-**2. Publish a separate plugin package** (good for third-party/private
-models, or models you don't want bundled here): add this to your own
-package's `pyproject.toml`, with no dependency on this repo's source:
-
-```toml
-[project.entry-points."smart_serial.devices"]
-"acme:projector-9000" = "acme_smart_serial.driver:AcmeProjector9000"
-```
-
-Once both packages are installed, `smart_serial.available_devices()`
-and `create_device()` pick it up automatically.
+This is the explicit, repository-local path the project intentionally
+uses: if a device needs to exist in the library, it is added as a normal
+Python class in this repo and imported by callers.
 
 ## Development
 

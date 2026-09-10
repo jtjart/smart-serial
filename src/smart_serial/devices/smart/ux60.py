@@ -31,7 +31,6 @@ from __future__ import annotations
 from typing import Literal, cast
 
 from ...device import Device
-from ...registry import register
 
 InputSource = Literal["VGA1", "VGA2", "Composite", "HDMI"]
 DisplayMode = Literal["SMARTpresentation", "brightroom", "darkroom", "sRGB", "User"]
@@ -48,7 +47,6 @@ def _bool(value: str) -> bool:
     return value.strip().lower() == "on"
 
 
-@register
 class SmartUX60(Device):
     """SMART UX60 ultra-short-throw projector (RS-232 control)."""
 

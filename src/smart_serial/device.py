@@ -13,16 +13,14 @@ class Device(ABC):
     """Base class for a serial-controlled AV device.
 
     Subclasses implement the command set for one specific model. Each
-    subclass sets :attr:`vendor` and :attr:`model` and registers itself
-    with :func:`smart_serial.registry.register` (usually via the
-    ``@register`` decorator) so it can be found by
-    :func:`smart_serial.registry.create_device`.
+    subclass sets :attr:`vendor` and :attr:`model` so the concrete device
+    can be imported and instantiated directly by callers.
 
     See ``src/smart_serial/devices/smart/ux60.py`` for a complete example
     to copy when adding support for a new model.
     """
 
-    #: Short, lowercase identifiers used as the registry lookup key, e.g.
+    #: Short, lowercase identifiers describing the device, e.g.
     #: ``vendor = "smart"``, ``model = "ux60"``.
     vendor: ClassVar[str]
     model: ClassVar[str]
@@ -61,10 +59,9 @@ class Device(ABC):
     def create(cls, port: str, **transport_kwargs: object) -> Device:
         """Convenience constructor that also builds the matching transport.
 
-        Most callers should go through
-        :func:`smart_serial.registry.create_device` instead, which also
-        looks the class up by vendor/model; this exists for when you
-        already have the concrete class in hand.
+        Callers normally import the concrete device class directly and
+        instantiate it; this factory is just a shorthand for creating the
+        transport needed by that model.
         """
         transport_kwargs.setdefault("baudrate", cls.default_baudrate)
         transport = SerialTransport(port, **transport_kwargs)  # type: ignore[arg-type]
