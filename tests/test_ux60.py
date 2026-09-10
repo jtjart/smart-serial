@@ -47,12 +47,12 @@ async def test_adjust_value_uses_minus_for_negative_delta(fake_transport) -> Non
 
 
 async def test_invalid_command_raises_command_error(fake_transport) -> None:
-    # The real transport raises CommandError itself on an "invalidcmd="
+    # The real transport raises CommandError itself on an "invalid cmd="
     # reply; the fake transport just returns canned strings, so simulate
     # that behavior directly to prove the driver propagates it.
     class _RejectingTransport(type(fake_transport)):
         async def send_command(self, command: str) -> str:
-            raise CommandError(command, "invalidcmd=[get frequency]")
+            raise CommandError(command, "invalid cmd=[get frequency]")
 
     device = SmartUX60(_RejectingTransport())
     with pytest.raises(CommandError):
