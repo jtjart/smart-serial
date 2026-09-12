@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version
+
 from .device import Device
 from .devices.smart.ux60 import SmartUX60
 from .exceptions import (
@@ -13,7 +15,11 @@ from .exceptions import (
 )
 from .transport import SerialTransport
 
-__version__ = "0.1.0"
+try:
+    __version__ = version("smart-serial")
+except PackageNotFoundError:
+    # Fallback when the package is used locally without being installed
+    __version__ = "unknown"
 
 __all__ = [
     "CommandError",
@@ -24,5 +30,4 @@ __all__ = [
     "SerialTransport",
     "SmartSerialError",
     "SmartUX60",
-    "__version__",
 ]
