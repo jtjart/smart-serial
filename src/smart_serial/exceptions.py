@@ -10,6 +10,8 @@ class SmartSerialError(Exception):
 class ConnectionNotEstablishedError(SmartSerialError):
     """Raised when a command is sent before :meth:`connect` succeeded."""
 
+    port: str
+
     def __init__(self, port: str) -> None:
         super().__init__(f"Not connected to {port!r}. Call connect() first.")
         self.port = port
@@ -17,6 +19,9 @@ class ConnectionNotEstablishedError(SmartSerialError):
 
 class SerialTimeoutError(SmartSerialError):
     """Raised when a device doesn't respond within the configured timeout."""
+
+    port: str
+    command: str
 
     def __init__(self, port: str, command: str) -> None:
         super().__init__(f"Timed out waiting for a response to {command!r} on {port!r}.")
@@ -27,6 +32,9 @@ class SerialTimeoutError(SmartSerialError):
 class CommandError(SmartSerialError):
     """Raised when a device reports that a command failed, or an unparsable reply."""
 
+    command: str
+    response: str
+
     def __init__(self, command: str, response: str) -> None:
         super().__init__(f"Command {command!r} failed: {response!r}")
         self.command = command
@@ -35,6 +43,8 @@ class CommandError(SmartSerialError):
 
 class DeviceIdleError(CommandError):
     """Raised when the device accepts the command but rejects it because it is idle/off."""
+
+    message: str
 
     def __init__(self, command: str, response: str) -> None:
         super().__init__(command, response)
