@@ -12,15 +12,21 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.12"
-      - run: pip install -e ".[dev]"
-      - run: ruff check .
-      - run: ruff format --check .
-      - run: mypy src
+          enable-cache: true
+
+      - run: uv python install 3.12
+      - run: uv sync --extra dev --python 3.12
+
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src
+      - run: uv run pyright
 
   test:
     strategy:
@@ -28,29 +34,58 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13"]
+
     runs-on: ${{ matrix.os }}
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[dev]"
-      - run: pytest --cov=smart_serial --cov-report=xml
+          enable-cache: true
+
+      - run: uv python install ${{ matrix.python-version }}
+      - run: uv sync --extra dev --python ${{ matrix.python-version }}
+
+      - run: uv run pytest --cov=smart_serial --cov-report=xml
+
       - uses: codecov/codecov-action@v4
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         with:
           files: coverage.xml
         continue-on-error: true
 
-  build:
+  type-check-package:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.12"
-      - run: pip install build
-      - run: python -m build
+          enable-cache: true
+
+      - run: uv python install 3.12
+      - run: uv sync --extra dev --python 3.12
+
+      - run: uv build
+      - run: uv run pyright --verifytypes smart_serial
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - run: uv python install 3.12
+      - run: uv sync --extra dev --python 3.12
+
+      - run: uv build
+
       - uses: actions/upload-artifact@v4
         with:
           name: dist
