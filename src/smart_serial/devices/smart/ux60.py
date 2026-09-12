@@ -32,11 +32,20 @@ from typing import Literal, cast
 
 from ...device import Device
 
-InputSource = Literal["VGA1", "VGA2", "Composite", "HDMI"]
 DisplayMode = Literal["SMARTpresentation", "brightroom", "darkroom", "sRGB", "User"]
 ClosedCaptioning = Literal["cc1", "cc2", "off"]
 PowerState = Literal["Powering", "On", "Cooling", "Confirm off", "Idle"]
 NetworkStatus = Literal["connected", "disconnected", "disabled"]
+
+_INPUT_SOURCE_DISPLAY = {
+    "vga1": "VGA1",
+    "vga2": "VGA2",
+    "s-video": "S-Video",
+    "composite": "Composite",
+    "hdmi": "HDMI",
+    "component": "Component",
+    "dvi": "DVI",
+}
 
 
 def _onoff(value: bool) -> str:
@@ -117,12 +126,26 @@ class SmartUX60(Device):
 
     # --- Source selection -----------------------------------------------
 
-    async def get_input(self) -> InputSource:
-        return cast(InputSource, await self.get_value("input"))
+    async def get_input(self) -> str:
+        input_value = (await self.get_value("input")).strip()
+        return _INPUT_SOURCE_DISPLAY.get(input_value.lower(), input_value)
 
-    async def select_input(self, source: InputSource) -> str:
-        """Switch the active input: ``"VGA1"``, ``"VGA2"``, ``"Composite"``, or ``"HDMI"``."""
-        return await self.set_value("input", source)
+    async def get_video_inputs(self) -> list[str]:
+        """Return the available inputs in the user-friendly GUI format."""
+        video_input_list = await self.get_value("videoinputs")
+        if not video_input_list:
+            return []
+        return [
+            _INPUT_SOURCE_DISPLAY.get(source.strip().lower(), source.strip())
+            for source in video_input_list.split(",")
+            if source
+        ]
+
+    async def select_input(self, source: str) -> str:
+        """Switch the active input."""
+        command_value = source.strip().lower()
+        input_value = (await self.set_value("input", command_value)).strip()
+        return _INPUT_SOURCE_DISPLAY.get(input_value.lower(), input_value)
 
     # --- General source (display) controls -------------------------------
 

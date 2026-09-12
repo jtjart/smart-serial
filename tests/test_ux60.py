@@ -93,9 +93,29 @@ async def test_get_power_state_uses_get_powerstate(fake_transport) -> None:
 
 
 async def test_select_input(fake_transport) -> None:
-    fake_transport.responses["set input=HDMI"] = "input=HDMI"
+    fake_transport.responses["set input=hdmi"] = "input=hdmi"
     device = _device(fake_transport)
     assert await device.select_input("HDMI") == "HDMI"
+
+
+async def test_get_input_normalizes_projector_source_names(fake_transport) -> None:
+    fake_transport.responses["get input"] = "input=s-video"
+    device = _device(fake_transport)
+    assert await device.get_input() == "S-Video"
+    assert fake_transport.sent == ["get input"]
+
+
+async def test_get_video_inputs_returns_gui_friendly_names(fake_transport) -> None:
+    fake_transport.responses["get videoinputs"] = "videoinputs=vga1,vga2,s-video,composite,hdmi"
+    device = _device(fake_transport)
+    assert await device.get_video_inputs() == ["VGA1", "VGA2", "S-Video", "Composite", "HDMI"]
+    assert fake_transport.sent == ["get videoinputs"]
+
+
+async def test_select_input_accepts_gui_style_names(fake_transport) -> None:
+    fake_transport.responses["set input=hdmi"] = "input=hdmi"
+    device = _device(fake_transport)
+    assert await device.select_input("hdmi") == "HDMI"
 
 
 # --- Audio ---------------------------------------------------------------------

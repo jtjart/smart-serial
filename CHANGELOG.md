@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   maintains the required ~10 ms inter-character delay while writing.
 - Added transport-level tests covering prompt-before-write behavior,
   retry logic, and command-response parsing.
+- Added `get_video_inputs()` method to the `SmartUX60` driver to get
+  available video input sources.
 
 ### Fixed
 
