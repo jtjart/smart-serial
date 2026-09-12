@@ -1,11 +1,28 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Any, cast
 
 import pytest
 
 from smart_serial.exceptions import DeviceIdleError
 from smart_serial.transport import SerialTransport
+
+
+def _set_transport_state(
+    transport: SerialTransport,
+    *,
+    reader: Any | None = None,
+    writer: Any | None = None,
+    lock: asyncio.Lock | None = None,
+) -> SerialTransport:
+    if reader is not None:
+        cast(Any, transport)._reader = reader
+    if writer is not None:
+        cast(Any, transport)._writer = writer
+    if lock is not None:
+        cast(Any, transport)._lock = lock
+    return transport
 
 
 class _DummyReader:
@@ -60,9 +77,11 @@ async def test_send_command_raises_device_idle_error_for_matching_invalid_cmd() 
         async def readuntil(self, _prompt: bytes) -> bytes:
             return b"invalid cmd=get modelnum\r>"
 
-    transport = SerialTransport("loop://")
-    transport._reader = _Reader()
-    transport._writer = _DummyWriter()
+    transport = _set_transport_state(
+        SerialTransport("loop://"),
+        reader=_Reader(),
+        writer=_DummyWriter(),
+    )
 
     try:
         await transport.send_command("get modelnum")
@@ -84,10 +103,12 @@ async def test_send_command_consumes_pending_prompt_before_writing() -> None:
                 return b">"
             return b"powerstate=On\r>"
 
-    transport = SerialTransport("loop://")
-    transport._reader = _Reader()
-    transport._writer = _DummyWriter()
-    transport._lock = asyncio.Lock()
+    transport = _set_transport_state(
+        SerialTransport("loop://"),
+        reader=_Reader(),
+        writer=_DummyWriter(),
+        lock=asyncio.Lock(),
+    )
 
     assert await transport.send_command("get powerstate") == "powerstate=On"
 
@@ -100,10 +121,12 @@ async def test_send_command_paces_writes_at_10ms_intervals(monkeypatch: pytest.M
 
     monkeypatch.setattr(asyncio, "sleep", fake_sleep)
 
-    transport = SerialTransport("loop://", inter_character_delay=0.01)
-    transport._reader = _DummyReader()
-    transport._writer = _DummyWriter()
-    transport._lock = asyncio.Lock()
+    transport = _set_transport_state(
+        SerialTransport("loop://", inter_character_delay=0.01),
+        reader=_DummyReader(),
+        writer=_DummyWriter(),
+        lock=asyncio.Lock(),
+    )
 
     assert await transport.send_command("get volume") == "volume=12"
     assert len(sleep_calls) == 10
@@ -121,9 +144,11 @@ async def test_send_command_retries_after_timeout() -> None:
                 raise asyncio.TimeoutError
             return b"powerstate=On\r>"
 
-    transport = SerialTransport("loop://")
-    transport._reader = _Reader()
-    transport._writer = _DummyWriter()
+    transport = _set_transport_state(
+        SerialTransport("loop://"),
+        reader=_Reader(),
+        writer=_DummyWriter(),
+    )
 
     assert await transport.send_command("get powerstate") == "powerstate=On"
 
@@ -139,18 +164,22 @@ async def test_send_command_retries_for_mismatched_invalid_command() -> None:
                 return b"invalid cmd=get gientp puotw\r>"
             return b"input=HDMI\r>"
 
-    transport = SerialTransport("loop://")
-    transport._reader = _Reader()
-    transport._writer = _DummyWriter()
+    transport = _set_transport_state(
+        SerialTransport("loop://"),
+        reader=_Reader(),
+        writer=_DummyWriter(),
+    )
 
     assert await transport.send_command("get input") == "input=HDMI"
 
 
 async def test_send_command_prefers_key_value_reply_over_echoed_command() -> None:
     """Some devices echo the command before returning the actual value."""
-    transport = SerialTransport("loop://")
-    transport._reader = _DummyReader()
-    transport._writer = _DummyWriter()
-    transport._lock = asyncio.Lock()
+    transport = _set_transport_state(
+        SerialTransport("loop://"),
+        reader=_DummyReader(),
+        writer=_DummyWriter(),
+        lock=asyncio.Lock(),
+    )
 
     assert await transport.send_command("get volume") == "volume=12"
