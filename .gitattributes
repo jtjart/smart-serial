@@ -1,0 +1,18 @@
+# Enforce LF for all text files globally
+* text=auto eol=lf
+
+# Explicitly define common text files for this project
+*.py text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.txt text eol=lf
+
+# Explicitly mark binaries so Git does not modify them
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
