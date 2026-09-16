@@ -2,12 +2,12 @@
 
 ## Setup
 
-```bash
-python -m venv .venv
-source .venv/bin/activate  # .venv\Scripts\activate on Windows
-pip install -e ".[dev]"
-pre-commit install
-```
+Open the repository in the dev container using VS Code and the Dev Containers
+extension. The container's `postCreateCommand` installs the development
+dependencies and pre-commit hooks automatically.
+
+The container is defined in
+[`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json).
 
 ## Workflow
 
@@ -19,13 +19,14 @@ pre-commit install
 3. Run the full check suite locally before pushing:
 
    ```bash
-   ruff check .
-   ruff format .
-   mypy src
-   pytest --cov=smart_serial --cov-report=term-missing
+   uv run ruff check .
+   uv run ruff format --check .
+   uv run mypy src
+   uv run pyright
+   uv run pytest --cov=smart_serial --cov-report=term-missing
    ```
 
-   (`pre-commit run --all-files` runs the lint/format hooks in one go.)
+   (`uv run pre-commit run --all-files` runs the configured hooks in one go.)
 4. Update `CHANGELOG.md` under an "Unreleased" heading.
 5. Open a PR. CI (`.github/workflows/ci.yml`) runs the same checks
    across the supported Python versions.
@@ -39,9 +40,8 @@ Keep commits focused; it's fine to have several small commits in a PR.
 
 See the "Adding support for another model" section of the
 [README](README.md#adding-support-for-another-model). In short: extend
-`Device`, register it, add it to `devices/__init__.py` and to the
-`[project.entry-points."smart_serial.devices"]` table in
-`pyproject.toml`, and add tests using the `fake_transport` fixture from
+`Device`, add the driver under `src/smart_serial/devices/`, import it from
+`devices/__init__.py`, and add tests using the `fake_transport` fixture from
 `tests/conftest.py` so no real hardware is needed to test your driver's
 command formatting.
 

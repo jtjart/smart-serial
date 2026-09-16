@@ -4,52 +4,28 @@
     {
       "label": "Lint (ruff)",
       "type": "shell",
-      "command": "ruff check . && ruff format --check .",
-      "windows": {
-        "command": ".\\.venv\\Scripts\\ruff.exe check . && .\\.venv\\Scripts\\ruff.exe format --check ."
-      },
-      "linux": {
-        "command": "./.venv/bin/ruff check . && ./.venv/bin/ruff format --check ."
-      },
-      "osx": {
-        "command": "./.venv/bin/ruff check . && ./.venv/bin/ruff format --check ."
-      },
+      "command": "uv run ruff check . && uv run ruff format --check .",
       "problemMatcher": [],
       "group": "test"
     },
     {
       "label": "Type-check (mypy)",
       "type": "shell",
-      "command": "mypy src",
-      "windows": { "command": ".\\.venv\\Scripts\\mypy.exe src" },
-      "linux": { "command": "./.venv/bin/mypy src" },
-      "osx": { "command": "./.venv/bin/mypy src" },
+      "command": "uv run mypy src",
       "problemMatcher": [],
       "group": "test"
     },
     {
       "label": "Test (pytest)",
       "type": "shell",
-      "command": "pytest --cov=smart_serial --cov-report=term-missing",
-      "windows": {
-        "command": ".\\.venv\\Scripts\\pytest.exe --cov=smart_serial --cov-report=term-missing"
-      },
-      "linux": {
-        "command": "./.venv/bin/pytest --cov=smart_serial --cov-report=term-missing"
-      },
-      "osx": {
-        "command": "./.venv/bin/pytest --cov=smart_serial --cov-report=term-missing"
-      },
+      "command": "uv run pytest --cov=smart_serial --cov-report=term-missing",
       "problemMatcher": [],
       "group": { "kind": "test", "isDefault": true }
     },
     {
       "label": "Build package",
       "type": "shell",
-      "command": "python -m build",
-      "windows": { "command": ".\\.venv\\Scripts\\python.exe -m build" },
-      "linux": { "command": "./.venv/bin/python -m build" },
-      "osx": { "command": "./.venv/bin/python -m build" },
+      "command": "uv run python -m build",
       "problemMatcher": [],
       "group": "build"
     },

@@ -193,28 +193,8 @@ Python class in this repo and imported by callers.
 
 ## Development
 
-```bash
-git clone https://github.com/jtjart/smart-serial.git
-cd smart-serial
-python -m venv .venv
-source .venv/bin/activate  # .venv\Scripts\activate on Windows
-pip install -e ".[dev]"
-pre-commit install
-```
-
-Run the checks locally the same way CI does:
-
-```bash
-ruff check .
-ruff format --check .
-mypy src
-pytest --cov=smart_serial
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development
-workflow, and [.vscode/](.vscode/) for editor integration --
-recommended extensions, debugging, and test discovery are pre-configured
-there (see `.vscode/extensions.json`).
+Development is done in the Python 3.13 dev container. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for setup and the development workflow.
 
 ## License
 

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Added a Python 3.13 development container and standardized local tooling
+  on `uv` dependency groups and `uv run` commands.
 - Simplified the public API to explicit device imports instead of a
   dynamic registry/plugin lookup, matching the repository's intended
   model of direct per-device classes.
