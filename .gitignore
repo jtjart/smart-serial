@@ -6,6 +6,7 @@ __pycache__/
 # Distribution / packaging
 build/
 dist/
+src/smart_serial/_version.py
 *.egg-info/
 .eggs/
 

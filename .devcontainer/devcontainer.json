@@ -27,6 +27,15 @@
           "tests"
         ],
         "python.analysis.typeCheckingMode": "strict",
+        "[toml]": {
+          "editor.defaultFormatter": "tamasfe.even-better-toml",
+          "editor.formatOnSave": true,
+          "editor.semanticHighlighting.enabled": true
+        },
+        "evenBetterToml.schema.enabled": true,
+        "evenBetterToml.schema.associations": {
+          "^(.*[/\\\\])?pyproject\\.toml$": "https://json.schemastore.org/pyproject.json"
+        },
         "editor.formatOnSave": true
       }
     }
