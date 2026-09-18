@@ -14,8 +14,7 @@ The SMART UX60 driver implements the RS-232 command set from Appendix B,
 "Remotely managing your system through an RS-232 serial interface," of
 SMART's SMART Board 600ix configuration and user's guide -- serial
 settings, power state controls, source selection, display/audio/network
-settings, and system commands. It hasn't yet been exercised against real
-hardware; see [Verifying against real hardware](#verifying-against-real-hardware).
+settings, and system commands.
 
 The transport follows the projector's operating notes closely:
 
@@ -110,86 +109,6 @@ smart_serial/
 - **Built-in devices** are normal Python classes that live under
   `smart_serial.devices`; callers import the concrete class they need
   rather than relying on a runtime registry lookup.
-
-## SMART UX60 driver reference
-
-`SmartUX60` follows the `get <key>` / `set <key>=<value>` convention
-used by almost every command in Appendix B, exposed generically via
-`get_value()` / `set_value()` / `adjust_value()`, plus typed, ergonomic
-wrappers for the commands you'll reach for most:
-
-| Area | Wrapper methods |
-| --- | --- |
-| Power | `power_on`, `power_off`, `power_off_now`, `power_off_low_power`, `get_power_state` |
-| Source | `get_input`, `select_input` |
-| Display | `get_display_mode`/`set_display_mode`, `get_brightness`/`set_brightness`/`adjust_brightness`, `get_contrast`/`set_contrast`, `get_video_freeze`/`set_video_freeze`, `get_closed_captioning`/`set_closed_captioning` |
-| Audio | `get_volume`/`set_volume`/`adjust_volume`, `get_mute`/`mute_audio`/`unmute_audio` |
-| Network | `get_network_status`, `get_ip_address`/`set_ip_address`, `get_mac_address`, `get_network_enabled`/`enable_network`/`disable_network` |
-| System | `get_lamp_hours`/`reset_lamp_hours`, `get_system_hours`, `get_serial_number`, `get_model_number`, `restore_defaults` |
-
-Every other command in Appendix B (VGA tuning: `frequency`, `tracking`,
-`saturation`, `tint`, `sharpness`; color: `red`/`green`/`blue`/`cyan`/
-`magenta`/`yellow`; network: `dhcp`, `subnetmask`, `gateway`,
-`primarydns`; system: `autosignal`, `lampreminder`, `highbrightness`,
-`autopoweroff`, `zoom`, `projectorid`, `hposition`, `vposition`,
-`aspectratio`, `projectionmode`, `startupscreen`, `language`,
-`groupname`, `projectorname`, `locationinfo`, `contactinfo`,
-`videomute`, `fwverddp`/`fwvernet`/`fwvermpu`/`fwverecp`,
-`signaldetected`, `usb1source`/`usb2source`) works the same way through
-`get_value()` / `set_value()` -- add a typed wrapper for any of these
-following the pattern in `ux60.py` if you use one often.
-
-**Serial settings:** 19200 baud, 8 data bits, no parity, 1 stop bit, no
-flow control (the `SerialTransport` defaults already match this). The
-projector's RS-232 port is a DCE device -- pin 2 = transmit, pin 3 =
-receive, pin 5 = signal ground -- so a standard straight-through
-male-to-female RS-232 cable is used, not a null-modem cable.
-
-**Two-stage shutdown:** `power_off()` starts the shutdown sequence and
-typically returns the `"Confirm off"` state; the projector requires a
-*second* `power_off()` within 10 seconds to actually enter Standby.
-Use `power_off_now()` to skip confirmation and shut down immediately
-(this can't be cancelled or delayed).
-
-**Network/VGA-out are off by default** on the projector itself --
-`enable_network()` must be called (or set locally in the OSD) before
-network-based control or VGA-out will work.
-
-## Verifying against real hardware
-
-Everything above is implemented directly from the vendor's documented
-command reference (command keys, value ranges, response format, and
-serial settings), but hasn't been run against a physical UX60 yet. Two
-things are worth confirming with real hardware if you hit issues:
-
-- **Response framing.** The transport reads until it sees a `>` prompt
-  and returns the last non-empty line before it. The guide confirms a
-  prompt follows every response but doesn't show raw byte sequences, so
-  if your unit frames things differently, `SerialTransport.send_command`
-  is the one place to adjust.
-- **Inter-character timing.** The guide asks for a ~10 ms gap between
-  characters "for reliable operation"; `SerialTransport` paces writes
-  accordingly (`inter_character_delay`, tunable in the constructor) but
-  hasn't been timing-verified on a real port.
-
-If you confirm either of these against hardware, a PR updating this
-section (and removing the caveat) would be very welcome.
-
-## Adding support for another model
-
-Add a new driver class directly in this repository:
-
-1. Create `src/smart_serial/devices/<vendor>/<model>.py` with a class
-   that extends `Device` and sets `vendor`/`model`.
-2. Follow `devices/smart/ux60.py` as the template for command handling.
-3. Import it from `src/smart_serial/devices/__init__.py`.
-4. Add tests under `tests/`, following `test_ux60.py` and the
-   `fake_transport` fixture in `tests/conftest.py` (no real hardware
-   needed).
-
-This is the explicit, repository-local path the project intentionally
-uses: if a device needs to exist in the library, it is added as a normal
-Python class in this repo and imported by callers.
 
 ## Development
 

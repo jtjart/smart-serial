@@ -26,9 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   retry logic, and command-response parsing.
 - Added `get_video_inputs()` method to the `SmartUX60` driver to get
   available video input sources.
-
-### Fixed
-
 - Fixed the serial write flow to respect the SMART projector’s requirement
   that new commands are only issued after the ready prompt has been seen.
 - Improved reliability for prompt-based command handling by treating the

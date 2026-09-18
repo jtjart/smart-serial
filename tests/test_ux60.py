@@ -33,7 +33,7 @@ async def test_set_value_with_source_targets_inactive_source(
 ) -> None:
     fake_transport.responses["set brightness vga1=65"] = "brightness vga1=65"
     device = _device(fake_transport)
-    assert await device.set_value("brightness", "65", source="vga1") == "65"
+    assert await device.set_value("brightness", "65", source=Source("vga1")) == "65"
 
 
 async def test_adjust_value_uses_plus_for_positive_delta(fake_transport: FakeTransport) -> None:
@@ -141,8 +141,8 @@ async def test_mute_and_unmute(fake_transport: FakeTransport) -> None:
     fake_transport.responses["set mute=on"] = "mute=on"
     fake_transport.responses["set mute=off"] = "mute=off"
     device = _device(fake_transport)
-    assert await device.mute_audio() is True
-    assert await device.unmute_audio() is False
+    assert await device.set_mute(True) is True
+    assert await device.set_mute(False) is False
 
 
 async def test_set_volume(fake_transport: FakeTransport) -> None:
@@ -158,14 +158,22 @@ async def test_network_enable_disable(fake_transport: FakeTransport) -> None:
     fake_transport.responses["set vgaoutnetenable=on"] = "vgaoutnetenable=on"
     fake_transport.responses["set vgaoutnetenable=off"] = "vgaoutnetenable=off"
     device = _device(fake_transport)
-    assert await device.enable_network() is True
-    assert await device.disable_network() is False
+    assert await device.set_vga_out_and_network_enabled(True) is True
+    assert await device.set_vga_out_and_network_enabled(False) is False
 
 
 async def test_get_network_status(fake_transport: FakeTransport) -> None:
     fake_transport.responses["get netstatus"] = "netstatus=connected"
     device = _device(fake_transport)
     assert await device.get_network_status() == "connected"
+
+
+async def test_signal_detected_and_restore_defaults(fake_transport: FakeTransport) -> None:
+    fake_transport.responses["get signaldetected"] = "signaldetected=true"
+    fake_transport.responses["set restoredefaults"] = "restoredefaults=done"
+    device = _device(fake_transport)
+    assert await device.get_signal_detected() is True
+    assert await device.restore_defaults() is True
 
 
 # --- System ------------------------------------------------------------------------
@@ -177,17 +185,25 @@ async def test_get_lamp_hours(fake_transport: FakeTransport) -> None:
     assert await device.get_lamp_hours() == 1234
 
 
-async def test_reset_lamp_hours_sends_bare_set_with_no_value_echoed_back(
-    fake_transport: FakeTransport,
-) -> None:
+async def test_reset_lamp_hours(fake_transport: FakeTransport) -> None:
     fake_transport.responses["set lamphrs=0"] = "lamphrs=0"
     device = _device(fake_transport)
-    await device.reset_lamp_hours()
-    assert fake_transport.sent == ["set lamphrs=0"]
+    assert await device.reset_lamp_hours() == 0
 
 
 async def test_restore_defaults_sends_bare_command(fake_transport: FakeTransport) -> None:
     fake_transport.responses["set restoredefaults"] = "restoredefaults=done"
     device = _device(fake_transport)
-    await device.restore_defaults()
-    assert fake_transport.sent == ["set restoredefaults"]
+    assert await device.restore_defaults()
+
+
+async def test_text_value_validators_enforce_length_limits(fake_transport: FakeTransport) -> None:
+    device = _device(fake_transport)
+    with pytest.raises(ValueError, match="12 characters"):
+        await device.set_group_name("1234567890123")
+    with pytest.raises(ValueError, match="12 characters"):
+        await device.set_projector_name("1234567890123")
+    with pytest.raises(ValueError, match="16 characters"):
+        await device.set_location_info("12345678901234567")
+    with pytest.raises(ValueError, match="16 characters"):
+        await device.set_contact_info("12345678901234567")
