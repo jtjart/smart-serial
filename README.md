@@ -30,7 +30,7 @@ The transport follows the projector's operating notes closely:
 pip install smart-serial
 ```
 
-Requires Python 3.10+.
+Requires Python 3.11+.
 
 ## Quickstart
 

@@ -9,7 +9,7 @@ description = "Asyncio library for controlling SMART Technologies AV devices (e.
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "Your Name", email = "you@example.com" }]
 keywords = [
     "smart",
@@ -27,7 +27,6 @@ classifiers = [
     "Topic :: System :: Hardware",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -103,7 +102,7 @@ line-ending = "lf"
 # ---------------------------------------------------------------------------
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 strict = true
 files = ["src", "tests"]
 
@@ -136,7 +135,7 @@ pretty = true
 [tool.pyright]
 include = ["src", "tests"]
 typeCheckingMode = "strict"
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 reportMissingImports = "error"
 reportMissingTypeStubs = "error"
 
