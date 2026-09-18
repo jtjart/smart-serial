@@ -4,6 +4,7 @@ import pytest
 
 from smart_serial.devices.smart.ux60 import SmartUX60
 from smart_serial.exceptions import CommandError
+from smart_serial.utils.source import Source
 from tests.conftest import FakeTransport
 
 
@@ -98,29 +99,39 @@ async def test_get_power_state_uses_get_powerstate(fake_transport: FakeTransport
 async def test_select_input(fake_transport: FakeTransport) -> None:
     fake_transport.responses["set input=hdmi"] = "input=hdmi"
     device = _device(fake_transport)
-    assert await device.select_input("HDMI") == "HDMI"
+    assert await device.select_input(Source("hdmi")) == Source("hdmi")
 
 
-async def test_get_input_normalizes_projector_source_names(fake_transport: FakeTransport) -> None:
+async def test_get_input_source_names(fake_transport: FakeTransport) -> None:
     fake_transport.responses["get input"] = "input=s-video"
     device = _device(fake_transport)
-    assert await device.get_input() == "S-Video"
+    input_source = await device.get_input()
+    assert input_source == Source("s-video")
+    assert input_source.display_name == "S-Video"
+    assert str(input_source) == "s-video"
     assert fake_transport.sent == ["get input"]
 
 
-async def test_get_video_inputs_returns_gui_friendly_names(
+async def test_get_video_inputs(
     fake_transport: FakeTransport,
 ) -> None:
     fake_transport.responses["get videoinputs"] = "videoinputs=vga1,vga2,s-video,composite,hdmi"
     device = _device(fake_transport)
-    assert await device.get_video_inputs() == ["VGA1", "VGA2", "S-Video", "Composite", "HDMI"]
+    assert await device.get_video_inputs() == [
+        Source("vga1"),
+        Source("vga2"),
+        Source("s-video"),
+        Source("composite"),
+        Source("hdmi"),
+    ]
     assert fake_transport.sent == ["get videoinputs"]
 
 
 async def test_select_input_accepts_gui_style_names(fake_transport: FakeTransport) -> None:
     fake_transport.responses["set input=hdmi"] = "input=hdmi"
     device = _device(fake_transport)
-    assert await device.select_input("hdmi") == "HDMI"
+    assert Source("HDMI") == Source("hdmi")
+    assert await device.select_input(Source("HDMI")) == Source("hdmi")
 
 
 # --- Audio ---------------------------------------------------------------------

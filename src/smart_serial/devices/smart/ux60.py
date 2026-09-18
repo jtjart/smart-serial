@@ -31,21 +31,12 @@ from __future__ import annotations
 from typing import Literal, cast
 
 from ...device import Device
+from ...utils.source import Source
 
 DisplayMode = Literal["SMARTpresentation", "brightroom", "darkroom", "sRGB", "User"]
 ClosedCaptioning = Literal["cc1", "cc2", "off"]
 PowerState = Literal["Powering", "On", "Cooling", "Confirm off", "Idle"]
 NetworkStatus = Literal["connected", "disconnected", "disabled"]
-
-_INPUT_SOURCE_DISPLAY = {
-    "vga1": "VGA1",
-    "vga2": "VGA2",
-    "s-video": "S-Video",
-    "composite": "Composite",
-    "hdmi": "HDMI",
-    "component": "Component",
-    "dvi": "DVI",
-}
 
 
 def _onoff(value: bool) -> str:
@@ -126,26 +117,21 @@ class SmartUX60(Device):
 
     # --- Source selection -----------------------------------------------
 
-    async def get_input(self) -> str:
+    async def get_input(self) -> Source:
         input_value = (await self.get_value("input")).strip()
-        return _INPUT_SOURCE_DISPLAY.get(input_value.lower(), input_value)
+        return Source(input_value)
 
-    async def get_video_inputs(self) -> list[str]:
+    async def get_video_inputs(self) -> list[Source]:
         """Return the available inputs in the user-friendly GUI format."""
         video_input_list = await self.get_value("videoinputs")
         if not video_input_list:
             return []
-        return [
-            _INPUT_SOURCE_DISPLAY.get(source.strip().lower(), source.strip())
-            for source in video_input_list.split(",")
-            if source
-        ]
+        return [Source(source) for source in video_input_list.split(",") if source]
 
-    async def select_input(self, source: str) -> str:
+    async def select_input(self, source: Source) -> Source:
         """Switch the active input."""
-        command_value = source.strip().lower()
-        input_value = (await self.set_value("input", command_value)).strip()
-        return _INPUT_SOURCE_DISPLAY.get(input_value.lower(), input_value)
+        input_value = (await self.set_value("input", source.value)).strip()
+        return Source(input_value)
 
     # --- General source (display) controls -------------------------------
 
