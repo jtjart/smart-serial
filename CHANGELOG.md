@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.0] - 2026-09-18
 
 ### Changed
 
@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   retry logic, and command-response parsing.
 - Added `get_video_inputs()` method to the `SmartUX60` driver to get
   available video input sources.
+- Added many `get_`/`set_`/`adjust_` accessors for the UX60 driver to cover all
+  documented commands.
 - Fixed the serial write flow to respect the SMART projector’s requirement
   that new commands are only issued after the ready prompt has been seen.
 - Improved reliability for prompt-based command handling by treating the
