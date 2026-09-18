@@ -222,7 +222,7 @@ class SmartUX60(Device):
     async def set_display_mode(self, mode: DisplayMode) -> DisplayMode:
         return DisplayMode(await self.set_value("displaymode", mode))
 
-    brightness_range = range(101)
+    brightness_range: range = range(101)
 
     async def get_brightness(self) -> int:
         return int(await self.get_value("brightness"))
@@ -236,7 +236,7 @@ class SmartUX60(Device):
     async def adjust_brightness(self, delta: int, *, source: Source | None = None) -> int:
         return int(await self.adjust_value("brightness", delta, source=source))
 
-    contrast_range = range(101)
+    contrast_range: range = range(101)
 
     async def get_contrast(self) -> int:
         return int(await self.get_value("contrast"))
@@ -248,7 +248,7 @@ class SmartUX60(Device):
     async def adjust_contrast(self, delta: int, *, source: Source | None = None) -> int:
         return int(await self.adjust_value("contrast", delta, source=source))
 
-    whitepeaking_range = range(11)
+    whitepeaking_range: range = range(11)
 
     async def get_whitepeaking(self) -> int:
         return int(await self.get_value("whitepeaking"))
@@ -262,7 +262,7 @@ class SmartUX60(Device):
     async def adjust_whitepeaking(self, delta: int, *, source: Source | None = None) -> int:
         return int(await self.adjust_value("whitepeaking", delta, source=source))
 
-    degamma_range = range(4)
+    degamma_range: range = range(4)
 
     async def get_degamma(self) -> int:
         return int(await self.get_value("degamma"))
@@ -274,7 +274,7 @@ class SmartUX60(Device):
     async def adjust_degamma(self, delta: int, *, source: Source | None = None) -> int:
         return int(await self.adjust_value("degamma", delta, source=source))
 
-    color_range = range(101)
+    color_range: range = range(101)
 
     async def get_red(self) -> int:
         return int(await self.get_value("red"))
@@ -352,7 +352,7 @@ class SmartUX60(Device):
     # MARK: Additional source controls
     ###################################
 
-    frequency_range = range(-5, 6)
+    frequency_range: range = range(-5, 6)
 
     async def get_frequency(self) -> int:
         """Only for VGA sources"""
@@ -364,7 +364,7 @@ class SmartUX60(Device):
             await self.set_int_value("frequency", value, self.frequency_range, source=source)
         )
 
-    tracking_range = range(32)
+    tracking_range: range = range(32)
 
     async def get_tracking(self) -> int:
         """Only for VGA sources"""
@@ -374,7 +374,7 @@ class SmartUX60(Device):
         """Only for VGA sources. Tracking offset setting, 0 to 31."""
         return int(await self.set_int_value("tracking", value, self.tracking_range, source=source))
 
-    saturation_range = range(101)
+    saturation_range: range = range(101)
 
     async def get_saturation(self) -> int:
         """Only for VGA or composite video sources."""
@@ -386,7 +386,7 @@ class SmartUX60(Device):
             await self.set_int_value("saturation", value, self.saturation_range, source=source)
         )
 
-    tint_range = range(101)
+    tint_range: range = range(101)
 
     async def get_tint(self) -> int:
         """Only for VGA or composite video sources."""
@@ -396,7 +396,7 @@ class SmartUX60(Device):
         """Only for VGA or composite video sources. Tint, 0 to 100."""
         return int(await self.set_int_value("tint", value, self.tint_range, source=source))
 
-    sharpness_range = range(32)
+    sharpness_range: range = range(32)
 
     async def get_sharpness(self) -> int:
         """Only for VGA or composite video sources."""
@@ -412,7 +412,7 @@ class SmartUX60(Device):
     # MARK: Audio controls
     #######################
 
-    volume_range = range(-20, 21)
+    volume_range: range = range(-20, 21)
 
     async def get_volume(self) -> int:
         return int(await self.get_value("volume"))
@@ -500,7 +500,7 @@ class SmartUX60(Device):
     async def set_high_brightness(self, enabled: bool) -> bool:
         return _bool(await self.set_value("highbrightness", _onoff(enabled)))
 
-    auto_power_off_range = range(241)
+    auto_power_off_range: range = range(241)
 
     async def get_auto_power_off(self) -> int:
         return int(await self.get_value("autopoweroff"))
@@ -508,7 +508,7 @@ class SmartUX60(Device):
     async def set_auto_power_off(self, value: int) -> int:
         return int(await self.set_int_value("autopoweroff", value, self.auto_power_off_range))
 
-    zoom_range = range(31)
+    zoom_range: range = range(31)
 
     async def get_zoom(self) -> int:
         return int(await self.get_value("zoom"))
@@ -516,7 +516,7 @@ class SmartUX60(Device):
     async def set_zoom(self, value: int) -> int:
         return int(await self.set_int_value("zoom", value, self.zoom_range))
 
-    projector_id_range = range(100)
+    projector_id_range: range = range(100)
 
     async def get_projector_id(self) -> int:
         return int(await self.get_value("projectorid"))
@@ -524,7 +524,7 @@ class SmartUX60(Device):
     async def set_projector_id(self, value: int) -> int:
         return int(await self.set_int_value("projectorid", value, self.projector_id_range))
 
-    hposition_range = range(101)
+    hposition_range: range = range(101)
 
     async def get_hposition(self) -> int:
         return int(await self.get_value("hposition"))
@@ -532,7 +532,7 @@ class SmartUX60(Device):
     async def set_hposition(self, value: int) -> int:
         return int(await self.set_int_value("hposition", value, self.hposition_range))
 
-    vposition_range = range(-5, 6)
+    vposition_range: range = range(-5, 6)
 
     async def get_vposition(self) -> int:
         return int(await self.get_value("vposition"))

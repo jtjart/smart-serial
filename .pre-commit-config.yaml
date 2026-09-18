@@ -25,6 +25,13 @@ repos:
         language: system
         pass_filenames: false
 
+      - id: pyright-verifytypes
+        name: pyright verifytypes
+        entry: uv run pyright --verifytypes smart_serial
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: pytest
         name: pytest
         entry: uv run pytest

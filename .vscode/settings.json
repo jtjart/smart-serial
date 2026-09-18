@@ -1,24 +1,26 @@
 {
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.inlayHints.variableTypes": true,
+  "python.analysis.inlayHints.functionReturnTypes": true,
   "python.terminal.activateEnvironment": true,
-
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestArgs": ["tests"],
-
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll.ruff": "explicit",
     "source.organizeImports.ruff": "explicit"
   },
-
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnSave": true
   },
-
-  "mypy-type-checker.args": ["--config-file=pyproject.toml"],
+  "mypy-type-checker.args": [
+    "--config-file=pyproject.toml"
+  ],
   "mypy-type-checker.cwd": "${workspaceFolder}",
-
   "files.exclude": {
     "**/__pycache__": true,
     "**/*.egg-info": true,
