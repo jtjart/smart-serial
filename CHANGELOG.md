@@ -5,6 +5,74 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-09-20
+
+### Fixed
+- `SmartUX60.create(...)` and `async with SmartUX60.create(...) as d` now return `SmartUX60`
+  (via `typing.Self`), not `Device`, so editors and type checkers offer the full API.
+- A timeout no longer causes a blind re-send of every command. Only idempotent commands
+  (`get`, absolute `set`, `on`) are retried after a timeout. `off` and relative adjustments
+  (`set volume+5`) are not: re-sending `off` was read by the projector as the shutdown
+  confirmation, and re-sending `+5` could apply it twice. A *garbled* command
+  (`invalid cmd=<something else>`) is still always re-sent, because it was not executed.
+- EOF on the serial port (e.g. USB adapter unplugged) raises `ConnectionLostError` and marks
+  the transport disconnected, instead of being retried as a timeout.
+- Failing to open the port raises `ConnectionFailedError` (a `SmartSerialError`) instead of
+  a bare `OSError`.
+- Stale bytes are drained only after connect or after a failed exchange, no longer before
+  *every* command (which added ~50 ms to each one).
+- `smart-serial power-off` now actually powers off (it used to stop at "Confirm off").
+  The CLI prints the resulting state, reports library errors as `error: ...` with exit
+  code 1, and `--port` is properly required.
+- Boolean replies are parsed strictly: an unrecognised reply raises `UnexpectedResponseError`
+  instead of silently becoming `False`. Bad enum / integer / IP replies raise
+  `UnexpectedResponseError` instead of a raw `ValueError`.
+- `DeviceIdleError` is only raised when the projector confirms `powerstate=Idle`. A command
+  rejected for another reason (e.g. a VGA-only setting while on HDMI) raises
+  `CommandRejectedError`. `str(DeviceIdleError)` now shows the idle message.
+- A string value containing a line break can no longer smuggle a second command onto the wire.
+- `Source("VGA 1")` and `Source("vga1")` are now equal; `display_name` no longer produces
+  `"Vga  1"`. `Source` is immutable (it was hashable but mutable) and has a useful `repr`.
+- Enum replies are matched case-insensitively.
+
+### Added
+- `SmartDevice` base class (`smart_serial.devices.base`) implementing SMART's
+  `get`/`set` console protocol once; new SMART models only declare their settings.
+- Declarative, typed settings (`IntSetting`, `AdjustableIntSetting`, `BoolSetting`,
+  `EnumSetting`, `StrSetting`, `IPv4Setting`, `Setting`, `ReadOnlySetting`), with metadata
+  (`bounds`, `enum`, `max_length`, `per_source`, `doc`) and `SmartDevice.settings()` for
+  introspection by generic integrations.
+- `PowerControl` capability protocol (`turn_on()`, `turn_off()`, `is_on()`), implemented by
+  `SmartUX60`.
+- `SerialSettings` dataclass (line settings and framing); `Transport` protocol.
+- `Source.coerce()`; `select_input()` and the `source=` arguments accept plain strings.
+- `CommandRejectedError`, `UnexpectedResponseError`, `ConnectionLostError`,
+  `ConnectionFailedError`.
+
+### Changed (breaking)
+- **Settings are attributes instead of `get_x`/`set_x`/`adjust_x` methods.**
+  `await p.get_brightness()` -> `await p.brightness.get()`; `set_x(v)` -> `.set(v)`;
+  `adjust_x(n)` -> `.adjust(n)` (only for the settings that had `adjust_x` before).
+  Renames: `whitepeaking` -> `white_peaking`, `hposition` -> `horizontal_position`,
+  `vposition` -> `vertical_position`, `usb1source`/`usb2source` -> `usb1_source`/`usb2_source`.
+  Unchanged: `get_value`, `set_value`, `adjust_value`, `power_on`, `power_off`, `power_off_now`,
+  `power_off_low_power`, `get_power_state`, `get_input`, `select_input`, `get_video_inputs`,
+  `restore_defaults`, `reset_lamp_hours`.
+- `Device.create(port, **kwargs)` -> `Device.create(port, settings: SerialSettings | None = None)`.
+  `SerialTransport(port, baudrate=...)` -> `SerialTransport(port, SerialSettings(baudrate=...))`.
+  `Device.default_baudrate` -> `Device.serial_settings`.
+- `SerialTransport.send_command()` (returned one parsed line, retried internally) ->
+  `SerialTransport.exchange()` (returns the raw text before the prompt). Reply parsing and
+  retries moved to `SmartDevice`.
+- `Device` no longer declares abstract `power_on`/`power_off`/`get_power_state`; use the
+  `PowerControl` protocol for generic code.
+- `smart_serial.utils.source.Source` moved to `smart_serial.source.Source`.
+- `DeviceIdleError` now derives from `CommandRejectedError`; its `.message` attribute is gone
+  (use `str(exc)`).
+
+### Removed
+- `set_int_value()` and the `*_range` class attributes; use e.g. `SmartUX60.brightness.bounds`.
+
 ## [0.2.0] - 2026-09-18
 
 ### Changed

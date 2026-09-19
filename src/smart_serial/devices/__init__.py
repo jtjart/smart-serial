@@ -1,12 +1,6 @@
-"""Built-in device drivers.
+"""SMART Technologies devices."""
 
-New device support is added by creating a concrete ``Device`` subclass in
-this package and importing it here so callers can use an explicit import
-from the public module path.
-"""
+from .base import SmartDevice
+from .ux60 import SmartUX60
 
-from __future__ import annotations
-
-from .smart.ux60 import SmartUX60
-
-__all__ = ["SmartUX60"]
+__all__ = ["SmartDevice", "SmartUX60"]

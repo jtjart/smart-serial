@@ -13,8 +13,8 @@ The container is defined in
 
 1. Create a branch off `main`.
 2. Make your change, with tests. Driver changes go in
-   `src/smart_serial/devices/<vendor>/<model>.py` with matching tests in
-   `tests/`; see `devices/smart/ux60.py` / `tests/test_ux60.py` as the
+   `src/smart_serial/devices/<model>.py` with matching tests in
+   `tests/`; see `devices/ux60.py` / `tests/test_ux60.py` as the
    template.
 3. Run the full check suite locally before pushing:
 

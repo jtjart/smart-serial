@@ -2,40 +2,49 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from types import TracebackType
-from typing import ClassVar
+from typing import ClassVar, Self
 
-from .transport import SerialTransport
+from .transport import SerialSettings, SerialTransport, Transport
 
 
 class Device(ABC):
     """Base class for a serial-controlled AV device.
 
-    Subclasses implement the command set for one specific model. Each
-    subclass sets :attr:`vendor` and :attr:`model` so the concrete device
-    can be imported and instantiated directly by callers.
-
-    See ``src/smart_serial/devices/smart/ux60.py`` for a complete example
-    to copy when adding support for a new model.
+    A ``Device`` owns the connection lifecycle and identifies itself
+    (:attr:`vendor`, :attr:`model`, :attr:`serial_settings`). Everything a device
+    can *do* is exposed by the concrete class, and -- where features are shared
+    across devices -- by the small protocols in :mod:`smart_serial.capabilities`.
     """
 
-    #: Short, lowercase identifiers describing the device, e.g.
-    #: ``vendor = "smart"``, ``model = "ux60"``.
     vendor: ClassVar[str]
     model: ClassVar[str]
 
-    #: Serial parameters this model expects out of the box. Subclasses
-    #: override whichever of these differ from the RS-232 default (9600
-    #: baud, 8N1) for their hardware.
-    default_baudrate: ClassVar[int] = 9600
+    #: Line settings used by :meth:`create`. Concrete drivers override this.
+    serial_settings: ClassVar[SerialSettings] = SerialSettings()
 
-    def __init__(self, transport: SerialTransport) -> None:
+    def __init__(self, transport: Transport) -> None:
         self._transport = transport
 
+    @classmethod
+    def create(cls, port: str, settings: SerialSettings | None = None) -> Self:
+        """Build a device on a new :class:`SerialTransport` for ``port``.
+
+        Returns the concrete subclass, so ``SmartUX60.create(...)`` is typed as
+        ``SmartUX60``. Pass ``settings`` to override :attr:`serial_settings`
+        (e.g. ``dataclasses.replace(SmartUX60.serial_settings, baudrate=9600)``).
+        The port is not opened until :meth:`connect` (or ``async with``).
+        """
+        return cls(SerialTransport(port, settings if settings is not None else cls.serial_settings))
+
     @property
-    def transport(self) -> SerialTransport:
+    def transport(self) -> Transport:
         return self._transport
+
+    @property
+    def is_connected(self) -> bool:
+        return self._transport.is_connected
 
     async def connect(self) -> None:
         await self._transport.connect()
@@ -43,7 +52,7 @@ class Device(ABC):
     async def disconnect(self) -> None:
         await self._transport.disconnect()
 
-    async def __aenter__(self) -> Device:
+    async def __aenter__(self) -> Self:
         await self.connect()
         return self
 
@@ -54,34 +63,3 @@ class Device(ABC):
         tb: TracebackType | None,
     ) -> None:
         await self.disconnect()
-
-    @classmethod
-    def create(cls, port: str, **transport_kwargs: object) -> Device:
-        """Convenience constructor that also builds the matching transport.
-
-        Callers normally import the concrete device class directly and
-        instantiate it; this factory is just a shorthand for creating the
-        transport needed by that model.
-        """
-        transport_kwargs.setdefault("baudrate", cls.default_baudrate)
-        transport = SerialTransport(port, **transport_kwargs)  # type: ignore[arg-type]
-        return cls(transport)
-
-    # --- Capabilities every device driver is expected to implement -----
-    # Kept deliberately small so that adding a new, very different model
-    # (e.g. an audio matrix switcher) doesn't force it to implement
-    # projector-specific concepts like lamp hours or input switching.
-    # Add capability-specific mixins/ABCs alongside this one as the
-    # library grows, rather than growing this base class indefinitely.
-
-    @abstractmethod
-    async def power_on(self) -> str:
-        """Power the device on. Returns the driver-specific resulting state."""
-
-    @abstractmethod
-    async def power_off(self) -> str:
-        """Power the device off. Returns the driver-specific resulting state."""
-
-    @abstractmethod
-    async def get_power_state(self) -> str:
-        """Return the device's raw, driver-specific power state string."""

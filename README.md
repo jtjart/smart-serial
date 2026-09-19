@@ -36,7 +36,7 @@ Requires Python 3.11+.
 ```python
 import asyncio
 
-from smart_serial.devices.smart.ux60 import SmartUX60
+from smart_serial.devices.ux60 import SmartUX60
 
 
 async def main() -> None:
@@ -44,7 +44,7 @@ async def main() -> None:
     async with projector:  # connects on enter, disconnects on exit
         await projector.power_on()
         await projector.select_input("HDMI")
-        print(await projector.get_power_state())
+        print(await projector.power_state.get())
 
 
 asyncio.run(main())
@@ -54,7 +54,7 @@ You can also instantiate the transport manually and pass it in:
 
 ```python
 from smart_serial import SerialTransport
-from smart_serial.devices.smart.ux60 import SmartUX60
+from smart_serial.devices.ux60 import SmartUX60
 
 transport = SerialTransport("/dev/ttyUSB0")  # defaults to the UX60's 19200 baud
 projector = SmartUX60(transport)

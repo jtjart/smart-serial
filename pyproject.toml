@@ -133,6 +133,7 @@ pretty = true
 # ---------------------------------------------------------------------------
 
 [tool.pyright]
+executionEnvironments = [{ root = "tests", reportPrivateUsage = false }]
 include = ["src", "tests"]
 typeCheckingMode = "strict"
 pythonVersion = "3.11"
