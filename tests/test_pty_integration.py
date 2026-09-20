@@ -10,7 +10,6 @@ from __future__ import annotations
 import asyncio
 import os
 import threading
-import tty
 from collections.abc import Iterator
 
 import pytest
@@ -18,9 +17,11 @@ import pytest
 from smart_serial import CommandRejectedError, PowerControl, SerialTransport, SmartUX60, Source
 from smart_serial.devices.ux60 import DisplayMode, PowerState
 
-pty = pytest.importorskip("pty", reason="needs a POSIX pseudo-terminal")
-if os.name != "posix":  # pragma: no cover
+if os.name != "posix":
     pytest.skip("needs a POSIX pseudo-terminal", allow_module_level=True)
+
+import pty
+import tty
 
 
 class EmulatedProjector(threading.Thread):
