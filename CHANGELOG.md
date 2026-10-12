@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- A connection reset while stale bytes were being discarded before a write escaped as a raw
+  `ConnectionResetError`; it is now a `ConnectionLostError`.
+- Writing to a connection the peer had already dropped made asyncio log
+  `socket.send() raised exception.` once per remaining character. The write now stops
+  immediately and raises `ConnectionLostError`.
+- `SerialTransport.connect()` is safe to call concurrently; the port is opened only once.
+
 ## [0.3.0] - 2026-09-20
 
 ### Fixed

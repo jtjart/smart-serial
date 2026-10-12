@@ -100,6 +100,7 @@ class SerialTransport:
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
         self._lock = asyncio.Lock()
+        self._connect_lock = asyncio.Lock()
         self._needs_drain = False
 
     @property
@@ -107,9 +108,13 @@ class SerialTransport:
         return self._writer is not None and not self._writer.is_closing()
 
     async def connect(self) -> None:
-        """Open the serial port. Safe to call again if already connected."""
-        if self.is_connected:
-            return
+        """Open the serial port. Safe to call again, or concurrently, if already connected."""
+        async with self._connect_lock:
+            if self.is_connected:
+                return
+            await self._open()
+
+    async def _open(self) -> None:
         s = self.settings
         _LOGGER.debug("Opening serial connection to %s @ %d baud", self.port, s.baudrate)
         try:
@@ -155,16 +160,17 @@ class SerialTransport:
         Raises:
             ConnectionNotEstablishedError: not connected.
             SerialTimeoutError: no prompt arrived within ``response_timeout``.
-            ConnectionLostError: the port was closed or failed mid-exchange.
+            ConnectionLostError: the port was closed or failed at any point of the
+                exchange, including while discarding stale bytes before the write.
         """
         async with self._lock:
             reader, writer = self._require_connection()
             s = self.settings
-            if self._needs_drain:
-                await self._drain_stale(reader)
-            # Assume the worst until a complete reply has been read.
-            self._needs_drain = True
             try:
+                if self._needs_drain:
+                    await self._drain_stale(reader)
+                # Assume the worst until a complete reply has been read.
+                self._needs_drain = True
                 await self._write_paced(writer, command)
                 raw = await asyncio.wait_for(reader.readuntil(s.prompt), timeout=s.response_timeout)
             except TimeoutError as exc:
@@ -187,6 +193,8 @@ class SerialTransport:
         payload = command.encode(s.encoding) + s.line_ending
         _LOGGER.debug("-> %r", payload)
         for i, byte in enumerate(payload):
+            if writer.is_closing():
+                raise ConnectionResetError("connection closed while writing")
             writer.write(bytes((byte,)))
             if i < len(payload) - 1 and s.inter_character_delay > 0:
                 await asyncio.sleep(s.inter_character_delay)

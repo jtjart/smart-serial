@@ -300,3 +300,66 @@ def test_disconnect_is_safe_when_never_connected_and_closes_the_port(
 
     asyncio.run(scenario())
     assert port.writer.closed
+
+
+def test_reset_while_discarding_stale_bytes_is_a_lost_connection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The drain before the first write used to leak a raw ConnectionResetError."""
+    port = install_port(monkeypatch, echo_device)
+
+    async def scenario() -> None:
+        transport = SerialTransport("fake", FAST)
+        await transport.connect()
+        assert port.reader is not None
+        port.reader.set_exception(ConnectionResetError(104, "Connection reset by peer"))
+        with pytest.raises(ConnectionLostError, match="reset by peer"):
+            await transport.exchange("get volume")
+        assert not transport.is_connected
+
+    asyncio.run(scenario())
+    assert port.writer.writes == []
+    assert port.writer.closed
+
+
+def test_writing_stops_as_soon_as_the_connection_drops(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Writing on to a closed asyncio transport logs 'socket.send() raised exception.'."""
+    port = install_port(monkeypatch, echo_device)
+    original_write = port.writer.write
+
+    def write_then_drop(data: bytes) -> None:
+        original_write(data)
+        port.writer.closed = True  # the peer reset the connection after the first byte
+
+    monkeypatch.setattr(port.writer, "write", write_then_drop)
+
+    async def scenario() -> None:
+        transport = SerialTransport("fake", FAST)
+        await transport.connect()
+        with pytest.raises(ConnectionLostError, match="while writing"):
+            await transport.exchange("get volume")
+        assert not transport.is_connected
+
+    asyncio.run(scenario())
+    assert port.writer.writes == [b"g"]
+
+
+def test_concurrent_connects_open_the_port_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    port = FakePort(echo_device)
+    opened = 0
+
+    async def slow_open(**kwargs: object) -> tuple[asyncio.StreamReader, FakeWriter]:
+        nonlocal opened
+        opened += 1
+        await asyncio.sleep(0)
+        return await port.open(**kwargs)
+
+    monkeypatch.setattr("smart_serial.transport.serial_asyncio.open_serial_connection", slow_open)
+
+    async def scenario() -> None:
+        transport = SerialTransport("fake", FAST)
+        await asyncio.gather(transport.connect(), transport.connect(), transport.connect())
+        assert transport.is_connected
+
+    asyncio.run(scenario())
+    assert opened == 1
